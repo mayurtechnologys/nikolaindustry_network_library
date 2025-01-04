@@ -1,57 +1,32 @@
-#ifndef NIKOLAINDUSTRY_NETWORK_H
-#define NIKOLAINDUSTRY_NETWORK_H
+#ifndef NIKOLA_INDUSTRY_NETWORK_H
+#define NIKOLA_INDUSTRY_NETWORK_H
 
 #include <WiFi.h>
 #include <WebSocketsClient.h>
 #include <ArduinoJson.h>
-#include <Preferences.h>
-#include <BluetoothSerial.h>
 
 class NikolaIndustryNetwork {
 public:
-    NikolaIndustryNetwork(const char* wsHost, uint16_t wsPort, const String& deviceID);
+    NikolaIndustryNetwork(const char* host, uint16_t port, const char* deviceId);
 
-    // Initialization
-    void begin();
-    void loop();
-
-    // WebSocket Messaging
-    void sendMessage(const char* message);
-    void sendJSON(DynamicJsonDocument& doc);
-
-    // WiFi and AP Modes
-    void connectToWiFi();
-    void startAPMode(const char* apSSID, const char* apPassword);
-
-    // Bluetooth
-    void startBluetooth(const char* deviceName);
-
-    // GPIO Control
-    void controlGPIO(int pin, const char* action);
+    void begin(const char* ssid, const char* password); // Initialize WiFi and WebSocket
+    void loop();                                        // Keep the WebSocket alive
+    void sendMessage(const String& message);           // Send a message
+    void setEventCallback(std::function<void(const JsonObject&)> callback);
 
 private:
-    // WebSocket Event Handler
-    static void webSocketEvent(WStype_t type, uint8_t* payload, size_t length);
+    const char* _host;
+    uint16_t _port;
+    String _deviceId;
+    WebSocketsClient _webSocket;
 
-    // Member Variables
-    String ssid;
-    String password;
-    String deviceID;
+    unsigned long _lastPingTime = 0;
+    const unsigned long _pingInterval = 50000;  // 50 seconds
+    std::function<void(const JsonObject&)> _eventCallback;
 
-    const char* wsHost;
-    uint16_t wsPort;
-    String wsPath;
-
-    Preferences preferences;
-    WebSocketsClient webSocket;
-    BluetoothSerial btSerial;
-
-    // Helper Methods
-    void loadWiFiCredentials();
-    void handleWebSocketMessage(const char* message);
-
-    unsigned long lastPingTime;
-    const unsigned long pingInterval = 50000;
+    void connectToWiFi(const char* ssid, const char* password);
+    void initializeWebSocket();
+    static void handleWebSocketEvent(WStype_t type, uint8_t* payload, size_t length);
 };
 
 #endif
